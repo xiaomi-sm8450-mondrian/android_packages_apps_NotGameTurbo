@@ -31,6 +31,7 @@ class TouchTestActivity : Activity() {
             Switch(this).apply {
                 text = getString(R.string.touch_test_game_mode)
                 setTextColor(Color.WHITE)
+                isEnabled = TouchFeatureManager.isTouchFeatureDeclared()
                 setOnCheckedChangeListener { _, checked ->
                     TouchFeatureManager.setGameMode(checked)
                 }
@@ -40,6 +41,9 @@ class TouchTestActivity : Activity() {
             Switch(this).apply {
                 text = getString(R.string.touch_test_super_report)
                 setTextColor(Color.WHITE)
+                isEnabled =
+                    TouchFeatureManager.isPollingRateDeclared() ||
+                        TouchFeatureManager.isTouchFeatureDeclared()
                 setOnCheckedChangeListener { _, checked ->
                     TouchFeatureManager.setSuperReport(checked)
                 }

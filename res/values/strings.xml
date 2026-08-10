@@ -50,6 +50,7 @@
     <string name="debug_title">HAL mode debug</string>
     <string name="debug_querying">Querying…</string>
     <string name="debug_refresh">Refresh</string>
+    <string name="debug_polling_rate">High touch polling rate</string>
 
     <string name="reset_title">Reset to defaults</string>
     <string name="reset_message">Reset game mode settings for this app to their defaults?</string>

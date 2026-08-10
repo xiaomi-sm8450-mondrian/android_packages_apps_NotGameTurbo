@@ -14,6 +14,7 @@ import com.android.settingslib.widget.SettingsBasePreferenceFragment
 class DebugFragment : SettingsBasePreferenceFragment() {
 
     private val rows = mutableListOf<Pair<Preference, Int>>()
+    private var pollingRateRow: Preference? = null
 
     private val modes =
         listOf(
@@ -44,6 +45,15 @@ class DebugFragment : SettingsBasePreferenceFragment() {
             }
         )
 
+        pollingRateRow =
+            Preference(context).apply {
+                title = getString(R.string.debug_polling_rate)
+                summary = getString(R.string.debug_querying)
+                isSelectable = false
+                isIconSpaceReserved = false
+            }
+        screen.addPreference(pollingRateRow!!)
+
         modes.forEach { (label, mode) ->
             val pref =
                 Preference(context).apply {
@@ -61,12 +71,23 @@ class DebugFragment : SettingsBasePreferenceFragment() {
     }
 
     private fun refresh() {
-        rows.forEach { (pref, _) -> pref.summary = getString(R.string.debug_querying) }
+        val querying = getString(R.string.debug_querying)
+        rows.forEach { (pref, _) -> pref.summary = querying }
+        pollingRateRow?.summary = querying
         val handler = Handler(Looper.getMainLooper())
         Thread {
                 val results =
                     rows.map { (pref, mode) -> pref to TouchFeatureManager.queryMode(mode) }
-                handler.post { results.forEach { (pref, q) -> pref.summary = format(q) } }
+                val pollingRate = TouchFeatureManager.queryPollingRate()
+                handler.post {
+                    results.forEach { (pref, q) -> pref.summary = format(q) }
+                    pollingRateRow?.summary =
+                        when (pollingRate) {
+                            true -> "enabled"
+                            false -> "disabled"
+                            null -> "—"
+                        }
+                }
             }
             .start()
     }

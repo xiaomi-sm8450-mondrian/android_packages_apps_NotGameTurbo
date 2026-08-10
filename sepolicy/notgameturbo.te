@@ -1,3 +1,5 @@
+# For targets that ship the touchfeature HAL. Both types are undefined in this tree, so adding this
+# directory to BOARD_VENDOR_SEPOLICY_DIRS here would fail the sepolicy build.
 allow platform_app hal_touchfeature_xiaomi_service:service_manager find;
 binder_call(platform_app, hal_touchfeature_xiaomi_default)
 allow priv_app hal_touchfeature_xiaomi_service:service_manager find;

@@ -9,6 +9,7 @@ import android.os.Binder
 import android.os.IBinder
 import android.os.ServiceManager
 import android.util.Log
+import vendor.lineage.touch.IHighTouchPollingRate
 import vendor.xiaomi.hw.touchfeature.ITouchFeature
 
 object TouchFeatureManager {
@@ -42,33 +43,85 @@ object TouchFeatureManager {
 
     @Volatile private var touchFeature: ITouchFeature? = null
 
+    @Volatile private var pollingRate: IHighTouchPollingRate? = null
+
     private val deathRecipient =
         IBinder.DeathRecipient {
             Log.w(TAG, "touchfeature service died")
             touchFeature = null
         }
 
-    @Synchronized
-    private fun getService(): ITouchFeature? =
-        touchFeature
-            ?: runCatching {
-                    val fqName = "${ITouchFeature.DESCRIPTOR}/default"
-                    val binder = Binder.allowBlocking(ServiceManager.waitForDeclaredService(fqName))
-                    ITouchFeature.Stub.asInterface(binder).apply {
-                        asBinder().linkToDeath(deathRecipient, 0)
-                    }
-                }
-                .onSuccess { touchFeature = it }
-                .onFailure { e -> Log.e(TAG, "failed to get touchfeature service", e) }
-                .getOrNull()
+    private val pollingRateDeathRecipient =
+        IBinder.DeathRecipient {
+            Log.w(TAG, "high touch polling rate service died")
+            pollingRate = null
+        }
 
-    fun isAvailable(): Boolean = getService() != null
+    // The declared guard is load-bearing: allowBlocking(null) returns null rather than throwing, so
+    // without it asInterface(null).apply { asBinder() } NPEs inside runCatching on every call.
+    @Synchronized
+    private fun getService(): ITouchFeature? {
+        touchFeature?.let {
+            return it
+        }
+        if (!isTouchFeatureDeclared()) {
+            return null
+        }
+        return runCatching {
+                val fqName = "${ITouchFeature.DESCRIPTOR}/default"
+                val binder = Binder.allowBlocking(ServiceManager.waitForDeclaredService(fqName))
+                ITouchFeature.Stub.asInterface(binder).apply {
+                    asBinder().linkToDeath(deathRecipient, 0)
+                }
+            }
+            .onSuccess { touchFeature = it }
+            .onFailure { e -> Log.e(TAG, "failed to get touchfeature service", e) }
+            .getOrNull()
+    }
+
+    @Synchronized
+    private fun getPollingRateService(): IHighTouchPollingRate? {
+        pollingRate?.let {
+            return it
+        }
+        if (!isPollingRateDeclared()) {
+            return null
+        }
+        return runCatching {
+                val fqName = "${IHighTouchPollingRate.DESCRIPTOR}/default"
+                val binder = Binder.allowBlocking(ServiceManager.waitForDeclaredService(fqName))
+                IHighTouchPollingRate.Stub.asInterface(binder).apply {
+                    asBinder().linkToDeath(pollingRateDeathRecipient, 0)
+                }
+            }
+            .onSuccess { pollingRate = it }
+            .onFailure { e -> Log.e(TAG, "failed to get polling rate service", e) }
+            .getOrNull()
+    }
+
+    // Not @Synchronized: the getters hold the object monitor across waitForDeclaredService(), so
+    // sharing it here would let a main-thread gating call block behind a slow HAL bind.
+    private val touchFeatureDeclared: Boolean by lazy { queryDeclared(ITouchFeature.DESCRIPTOR) }
+
+    private val pollingRateDeclared: Boolean by lazy {
+        queryDeclared(IHighTouchPollingRate.DESCRIPTOR)
+    }
+
+    private fun queryDeclared(descriptor: String): Boolean =
+        runCatching { ServiceManager.isDeclared("$descriptor/default") }.getOrDefault(false)
+
+    fun isTouchFeatureDeclared(): Boolean = touchFeatureDeclared
+
+    fun isPollingRateDeclared(): Boolean = pollingRateDeclared
+
+    /** Binds both services, so this blocks. Call it off the main thread. */
+    fun isAvailable(): Boolean = getService() != null || getPollingRateService() != null
 
     private fun setModeValue(mode: Int, value: Int) {
         val service =
             getService()
                 ?: run {
-                    Log.e(TAG, "touchfeature service is null, cannot set mode $mode")
+                    Log.d(TAG, "no touchfeature service, cannot set mode $mode")
                     return
                 }
         runCatching { service.setTouchMode(TOUCH_ID, mode, value) }
@@ -82,7 +135,13 @@ object TouchFeatureManager {
 
     fun setSuperReport(enabled: Boolean) {
         Log.i(TAG, "setSuperReport: $enabled")
-        setModeValue(TOUCH_SUPER_REPORT, if (enabled) 1 else 0)
+        val service = getPollingRateService()
+        if (service == null) {
+            setModeValue(TOUCH_SUPER_REPORT, if (enabled) 1 else 0)
+            return
+        }
+        runCatching { service.setEnabled(enabled) }
+            .onFailure { e -> Log.e(TAG, "setEnabled(enabled=$enabled) failed", e) }
     }
 
     fun setPanelOrientation(rotation: Int) {
@@ -99,6 +158,9 @@ object TouchFeatureManager {
         val max: Int?,
         val values: Int?,
     )
+
+    fun queryPollingRate(): Boolean? =
+        getPollingRateService()?.let { runCatching { it.getEnabled() }.getOrNull() }
 
     fun queryMode(mode: Int): ModeQuery {
         val service = getService()

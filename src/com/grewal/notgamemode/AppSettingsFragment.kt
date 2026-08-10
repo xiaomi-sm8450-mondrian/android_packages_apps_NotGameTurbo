@@ -82,8 +82,14 @@ class AppSettingsFragment : SettingsBasePreferenceFragment() {
             }
         screen.addPreference(superSwitch!!)
 
+        val hasTuning = TouchFeatureManager.isTouchFeatureDeclared()
+        val hasSuperReport = TouchFeatureManager.isPollingRateDeclared() || hasTuning
+
         val tuning =
-            PreferenceCategory(context).apply { title = getString(R.string.tuning_category_title) }
+            PreferenceCategory(context).apply {
+                title = getString(R.string.tuning_category_title)
+                if (!hasTuning) summary = getString(R.string.tuning_unavailable_summary)
+            }
         screen.addPreference(tuning)
 
         expertSwitch =
@@ -140,10 +146,10 @@ class AppSettingsFragment : SettingsBasePreferenceFragment() {
 
         fun updateEnabled() {
 
-            superSwitch?.isEnabled = gameEnabled
-            expertSwitch?.isEnabled = gameEnabled
-            presetSlider?.isEnabled = gameEnabled && expertOn
-            manualSliders.forEach { it.isEnabled = gameEnabled && !expertOn }
+            superSwitch?.isEnabled = gameEnabled && hasSuperReport
+            expertSwitch?.isEnabled = gameEnabled && hasTuning
+            presetSlider?.isEnabled = gameEnabled && expertOn && hasTuning
+            manualSliders.forEach { it.isEnabled = gameEnabled && !expertOn && hasTuning }
         }
         updateEnabled()
 
