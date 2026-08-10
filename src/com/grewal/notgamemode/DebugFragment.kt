@@ -73,7 +73,6 @@ class DebugFragment : SettingsBasePreferenceFragment() {
 
     private fun format(q: TouchFeatureManager.ModeQuery): String {
         fun s(v: Int?) = v?.toString() ?: "—"
-        val values = q.values?.joinToString(",", "[", "]") ?: "—"
-        return "cur=${s(q.cur)}  def=${s(q.def)}  min=${s(q.min)}  max=${s(q.max)}  values=$values"
+        return "cur=${s(q.cur)}  def=${s(q.def)}  min=${s(q.min)}  max=${s(q.max)}  values=${s(q.values)}"
     }
 }

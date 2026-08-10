@@ -71,7 +71,7 @@ object TouchFeatureManager {
                     Log.e(TAG, "touchfeature service is null, cannot set mode $mode")
                     return
                 }
-        runCatching { service.setModeValue(TOUCH_ID, mode, value) }
+        runCatching { service.setTouchMode(TOUCH_ID, mode, value) }
             .onFailure { e -> Log.e(TAG, "setModeValue(mode=$mode, value=$value) failed", e) }
     }
 
@@ -97,7 +97,7 @@ object TouchFeatureManager {
         val def: Int?,
         val min: Int?,
         val max: Int?,
-        val values: List<Int>?,
+        val values: Int?,
     )
 
     fun queryMode(mode: Int): ModeQuery {
@@ -105,11 +105,11 @@ object TouchFeatureManager {
         fun <T> attempt(block: (ITouchFeature) -> T): T? =
             service?.let { runCatching { block(it) }.getOrNull() }
         return ModeQuery(
-            cur = attempt { it.getModeCurValue(TOUCH_ID, mode) },
-            def = attempt { it.getModeDefaultValue(TOUCH_ID, mode) },
-            min = attempt { it.getModeMinValue(TOUCH_ID, mode) },
-            max = attempt { it.getModeMaxValue(TOUCH_ID, mode) },
-            values = attempt { it.getModeValue(TOUCH_ID, mode).toList() },
+            cur = attempt { it.getTouchModeCurValue(TOUCH_ID, mode) },
+            def = attempt { it.getTouchModeDefValue(TOUCH_ID, mode) },
+            min = attempt { it.getTouchModeMinValue(TOUCH_ID, mode) },
+            max = attempt { it.getTouchModeMaxValue(TOUCH_ID, mode) },
+            values = attempt { it.getModeValues(TOUCH_ID, mode) },
         )
     }
 }
