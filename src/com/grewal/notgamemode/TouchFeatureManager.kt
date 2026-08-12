@@ -107,8 +107,14 @@ object TouchFeatureManager {
         queryDeclared(IHighTouchPollingRate.DESCRIPTOR)
     }
 
-    private fun queryDeclared(descriptor: String): Boolean =
-        runCatching { ServiceManager.isDeclared("$descriptor/default") }.getOrDefault(false)
+    // Logged here rather than at each call site: by lazy makes this run once per interface, while
+    // the getters run on every poll.
+    private fun queryDeclared(descriptor: String): Boolean {
+        val fqName = "$descriptor/default"
+        val declared = runCatching { ServiceManager.isDeclared(fqName) }.getOrDefault(false)
+        Log.i(TAG, "$fqName declared: $declared")
+        return declared
+    }
 
     fun isTouchFeatureDeclared(): Boolean = touchFeatureDeclared
 
