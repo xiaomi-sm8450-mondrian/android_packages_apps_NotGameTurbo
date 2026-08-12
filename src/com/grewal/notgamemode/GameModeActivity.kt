@@ -9,12 +9,17 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity
+import java.util.concurrent.Executors
 
 class GameModeActivity : CollapsingToolbarBaseActivity() {
 
     companion object {
         private const val TAG = "GameModeActivity"
     }
+
+    private val executor = Executors.newSingleThreadExecutor()
+
+    private var errorDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,26 +38,35 @@ class GameModeActivity : CollapsingToolbarBaseActivity() {
         checkTouchFeature()
     }
 
-    private fun checkTouchFeature() {
+    override fun onDestroy() {
+        errorDialog?.dismiss()
+        errorDialog = null
+        executor.shutdownNow()
+        super.onDestroy()
+    }
 
-        Thread {
-                val available = TouchFeatureManager.isAvailable()
-                runOnUiThread {
-                    if (!available && !isFinishing) {
-                        showTouchFeatureError()
-                    }
+    private fun checkTouchFeature() {
+        executor.execute {
+            val available = TouchFeatureManager.isAvailable()
+            runOnUiThread {
+                if (!available && !isFinishing && !isDestroyed) {
+                    showTouchFeatureError()
                 }
             }
-            .start()
+        }
     }
 
     private fun showTouchFeatureError() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.touchfeature_error_title)
-            .setMessage(R.string.touchfeature_error_message)
-            .setCancelable(false)
-            .setPositiveButton(R.string.retry) { _, _ -> checkTouchFeature() }
-            .setNegativeButton(R.string.exit) { _, _ -> finish() }
-            .show()
+        if (errorDialog?.isShowing == true) {
+            return
+        }
+        errorDialog =
+            AlertDialog.Builder(this)
+                .setTitle(R.string.touchfeature_error_title)
+                .setMessage(R.string.touchfeature_error_message)
+                .setPositiveButton(R.string.retry) { _, _ -> checkTouchFeature() }
+                .setNegativeButton(R.string.exit) { _, _ -> finish() }
+                .setOnDismissListener { errorDialog = null }
+                .show()
     }
 }
