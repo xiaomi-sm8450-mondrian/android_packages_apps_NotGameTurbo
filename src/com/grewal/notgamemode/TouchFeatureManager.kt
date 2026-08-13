@@ -124,6 +124,12 @@ object TouchFeatureManager {
     fun isAvailable(): Boolean = getService() != null || getPollingRateService() != null
 
     private fun setModeValue(mode: Int, value: Int) {
+        // GameModeService polls and TouchOrientationService fires on every rotation, so short
+        // circuit before the getService() monitor on targets that declare no touchfeature HAL at
+        // all, rather than logging the miss on every call.
+        if (!isTouchFeatureDeclared()) {
+            return
+        }
         val service =
             getService()
                 ?: run {

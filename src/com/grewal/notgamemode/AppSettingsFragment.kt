@@ -64,6 +64,9 @@ class AppSettingsFragment : SettingsBasePreferenceFragment() {
         var gameEnabled = store?.getBoolean(GamePrefs.enabledKey(pkg), false) ?: false
         var expertOn = store?.getBoolean(GamePrefs.expertKey(pkg), false) ?: false
 
+        val hasTuning = TouchFeatureManager.isTouchFeatureDeclared()
+        val hasSuperReport = TouchFeatureManager.isPollingRateDeclared() || hasTuning
+
         val masterSwitch =
             MainSwitchPreference(context).apply {
                 key = GamePrefs.enabledKey(pkg)
@@ -71,6 +74,19 @@ class AppSettingsFragment : SettingsBasePreferenceFragment() {
                 setDefaultValue(false)
             }
         screen.addPreference(masterSwitch)
+
+        // MainSwitchPreference renders no summary of its own, so the caveat needs its own row:
+        // without a touchfeature HAL the switch still gates super report, but the panel game mode
+        // its title promises never lands.
+        if (!hasTuning) {
+            screen.addPreference(
+                Preference(context).apply {
+                    summary = getString(R.string.game_mode_unavailable_summary)
+                    isSelectable = false
+                    isIconSpaceReserved = false
+                }
+            )
+        }
 
         superSwitch =
             SwitchPreferenceCompat(context).apply {
@@ -81,9 +97,6 @@ class AppSettingsFragment : SettingsBasePreferenceFragment() {
                 isIconSpaceReserved = false
             }
         screen.addPreference(superSwitch!!)
-
-        val hasTuning = TouchFeatureManager.isTouchFeatureDeclared()
-        val hasSuperReport = TouchFeatureManager.isPollingRateDeclared() || hasTuning
 
         val tuning =
             PreferenceCategory(context).apply {

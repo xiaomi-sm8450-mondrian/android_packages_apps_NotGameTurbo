@@ -7,8 +7,8 @@
     <string name="app_name">NotGameTurbo</string>
     <string name="settings_summary">Per-app touch game mode and tuning</string>
 
-    <string name="touchfeature_error_title">Touchfeature unavailable</string>
-    <string name="touchfeature_error_message">Failed to bind the touchfeature service, or it was not found. Game mode won\'t work.</string>
+    <string name="touchfeature_error_title">Touch HAL unavailable</string>
+    <string name="touchfeature_error_message">Failed to bind a touch HAL, or none was found. Game mode and high polling rate won\'t work.</string>
     <string name="retry">Retry</string>
     <string name="exit">Exit</string>
 
@@ -37,6 +37,7 @@
 
     <string name="tuning_category_title">Touch tuning (game mode)</string>
     <string name="tuning_unavailable_summary">Touch tuning is not available on this panel.</string>
+    <string name="game_mode_unavailable_summary">This panel has no game mode. Only the super report rate below will be applied.</string>
     <string name="tune_up_threshold">Touch-up threshold</string>
     <string name="tune_tolerance">Jitter tolerance</string>
     <string name="tune_aim_sensitivity">Aim sensitivity</string>
@@ -51,6 +52,8 @@
     <string name="debug_querying">Querying…</string>
     <string name="debug_refresh">Refresh</string>
     <string name="debug_polling_rate">High touch polling rate</string>
+    <string name="debug_declared">declared</string>
+    <string name="debug_not_declared">not declared</string>
 
     <string name="reset_title">Reset to defaults</string>
     <string name="reset_message">Reset game mode settings for this app to their defaults?</string>

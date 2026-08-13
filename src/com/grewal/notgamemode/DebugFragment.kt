@@ -45,6 +45,30 @@ class DebugFragment : SettingsBasePreferenceFragment() {
             }
         )
 
+        // The mode rows below are all ITouchFeature queries, so they read as a wall of dashes on
+        // targets that declare no such HAL. Name the interfaces up front rather than leaving that
+        // unexplained.
+        listOf(
+                "vendor.xiaomi.hw.touchfeature.ITouchFeature" to
+                    TouchFeatureManager.isTouchFeatureDeclared(),
+                "vendor.lineage.touch.IHighTouchPollingRate" to
+                    TouchFeatureManager.isPollingRateDeclared(),
+            )
+            .forEach { (descriptor, declared) ->
+                screen.addPreference(
+                    Preference(context).apply {
+                        title = descriptor
+                        summary =
+                            getString(
+                                if (declared) R.string.debug_declared
+                                else R.string.debug_not_declared
+                            )
+                        isSelectable = false
+                        isIconSpaceReserved = false
+                    }
+                )
+            }
+
         pollingRateRow =
             Preference(context).apply {
                 title = getString(R.string.debug_polling_rate)
